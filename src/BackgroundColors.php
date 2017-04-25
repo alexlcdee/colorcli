@@ -1,6 +1,6 @@
 <?php
 
-namespace ColorfulLogger;
+namespace ColorCLI;
 
 class BackgroundColors extends Enum
 {

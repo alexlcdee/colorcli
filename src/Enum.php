@@ -1,6 +1,6 @@
 <?php
 
-namespace ColorfulLogger;
+namespace ColorCLI;
 
 abstract class Enum
 {
@@ -14,7 +14,7 @@ abstract class Enum
     {
         $className = get_class($this);
         if (!self::isValidValue($value, $useStrictMode)) {
-            throw new InvalidValueException(\Yii::t('errors', "Value {value} not found in enum {class}", [
+            throw new InvalidValueException(strtr("Value {value} not found in enum {class}", [
                 '{class}' => $className,
                 '{value}' => $value
             ]));

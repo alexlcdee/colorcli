@@ -1,5 +1,5 @@
 {
-  "name": "alexlcdee/colorful-logger",
+  "name": "alexlcdee/colorcli",
   "description": "Console Logger with color highlighted level tags",
   "minimum-stability": "stable",
   "license": "MIT",
@@ -12,7 +12,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "ColorfulLogger\\": "src/"
+      "ColorCLI\\": "src/"
     }
   },
   "require": {

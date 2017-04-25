@@ -6,7 +6,7 @@
  * Time: 21:13
  */
 
-namespace ColorfulLogger;
+namespace ColorCLI;
 
 
 class InvalidValueException extends \Exception

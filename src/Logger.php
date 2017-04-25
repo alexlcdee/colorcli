@@ -1,6 +1,6 @@
 <?php
 
-namespace ColorfulLogger;
+namespace ColorCLI;
 
 use Psr\Log\AbstractLogger;
 use Psr\Log\LogLevel;
@@ -30,15 +30,35 @@ class Logger extends AbstractLogger
      * @param array $context
      *
      * @return void
+     * @throws InvalidValueException
      */
     public function log($level, $message, array $context = array())
     {
+        if (!$this->checkLevel($level)) {
+            throw new InvalidValueException("Level '$level' not found");
+        }
         $prefix = ColorHelper::colorString(ucfirst("[{$level}]"), $this->getFGColor($level), $this->getBGColor($level));
         fputs($this->getStream($level), "{$prefix}: $message\n");
     }
 
+    private function checkLevel($level)
+    {
+        $levels = [
+            LogLevel::EMERGENCY,
+            LogLevel::ALERT,
+            LogLevel::CRITICAL,
+            LogLevel::ERROR,
+            LogLevel::WARNING,
+            LogLevel::NOTICE,
+            LogLevel::INFO,
+            LogLevel::DEBUG
+        ];
+
+        return in_array($level, $levels);
+    }
+
     /**
-     * @param $level
+     * @param mixed $level
      * @return ForegroundColors|null
      */
     private function getFGColor($level)
@@ -59,7 +79,7 @@ class Logger extends AbstractLogger
     }
 
     /**
-     * @param $level
+     * @param mixed $level
      * @return BackgroundColors|null
      */
     private function getBGColor($level)
@@ -80,7 +100,7 @@ class Logger extends AbstractLogger
     }
 
     /**
-     * @param $level
+     * @param mixed $level
      * @return resource
      */
     private function getStream($level)
