@@ -2,6 +2,21 @@
 
 namespace ColorCLI;
 
+use MyCLabs\Enum\Enum;
+
+/**
+ * Class BackgroundColors
+ * @package ColorCLI
+ *
+ * @method static BackgroundColors BLACK()
+ * @method static BackgroundColors RED()
+ * @method static BackgroundColors GREEN()
+ * @method static BackgroundColors YELLOW()
+ * @method static BackgroundColors BLUE()
+ * @method static BackgroundColors MAGENTA()
+ * @method static BackgroundColors CYAN()
+ * @method static BackgroundColors LIGHT_GRAY()
+ */
 class BackgroundColors extends Enum
 {
     const BLACK = '40';

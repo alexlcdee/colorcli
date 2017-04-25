@@ -2,6 +2,29 @@
 
 namespace ColorCLI;
 
+use MyCLabs\Enum\Enum;
+
+/**
+ * Class ForegroundColors
+ * @package ColorCLI
+ *
+ * @method static ForegroundColors BLACK()
+ * @method static ForegroundColors DARK_GRAY()
+ * @method static ForegroundColors RED()
+ * @method static ForegroundColors LIGHT_RED()
+ * @method static ForegroundColors GREEN()
+ * @method static ForegroundColors LIGHT_GREEN()
+ * @method static ForegroundColors BROWN()
+ * @method static ForegroundColors YELLOW()
+ * @method static ForegroundColors BLUE()
+ * @method static ForegroundColors LIGHT_BLUE()
+ * @method static ForegroundColors PURPLE()
+ * @method static ForegroundColors LIGHT_PURPLE()
+ * @method static ForegroundColors CYAN()
+ * @method static ForegroundColors LIGHT_CYAN()
+ * @method static ForegroundColors LIGHT_GRAY()
+ * @method static ForegroundColors WHITE()
+ */
 class ForegroundColors extends Enum
 {
     const BLACK = '0;30';

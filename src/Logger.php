@@ -10,17 +10,22 @@ class Logger extends AbstractLogger
     /**
      * @var ForegroundColors[]
      */
-    private static $foregroundColorMap = null;
+    protected static $foregroundColorMap = null;
 
     /**
      * @var BackgroundColors[]
      */
-    private static $backgroundColorMap = null;
+    protected static $backgroundColorMap = null;
 
     /**
      * @var resource[]
      */
-    private static $streamsMap = null;
+    protected static $streamsMap = null;
+
+    /**
+     * @var string[]
+     */
+    protected static $levels = null;
 
     /**
      * Logs with an arbitrary level.
@@ -34,91 +39,173 @@ class Logger extends AbstractLogger
      */
     public function log($level, $message, array $context = array())
     {
-        if (!$this->checkLevel($level)) {
-            throw new InvalidValueException("Level '$level' not found");
-        }
-        $prefix = ColorHelper::colorString(ucfirst("[{$level}]"), $this->getFGColor($level), $this->getBGColor($level));
-        fputs($this->getStream($level), "{$prefix}: $message\n");
-    }
-
-    private function checkLevel($level)
-    {
-        $levels = [
-            LogLevel::EMERGENCY,
-            LogLevel::ALERT,
-            LogLevel::CRITICAL,
-            LogLevel::ERROR,
-            LogLevel::WARNING,
-            LogLevel::NOTICE,
-            LogLevel::INFO,
-            LogLevel::DEBUG
-        ];
-
-        return in_array($level, $levels);
+        $this->checkLevel($level);
+        $prefix = ColorHelper::colorString(strtoupper("[{$level}]"), $this->getFGColor($level), $this->getBGColor($level));
+        fputs($this->getOutputStream($level), "{$prefix}: $message\n");
     }
 
     /**
+     * Check if level exists in list of possible levels
+     * @param mixed $level
+     */
+    public function checkLevel($level)
+    {
+        if (static::$levels === null) {
+            $this->loadLevels();
+        }
+
+        if (!in_array($level, static::$levels)) {
+            $levels = implode(', ', static::$levels);
+            throw new \UnexpectedValueException("Level must be one of [$levels].");
+        }
+    }
+
+    private function loadLevels()
+    {
+        $reflection = new \ReflectionClass(LogLevel::class);
+        static::$levels = $reflection->getConstants();
+    }
+
+    /**
+     * Get foreground color for specified level
      * @param mixed $level
      * @return ForegroundColors|null
      */
-    private function getFGColor($level)
+    public function getFGColor($level)
     {
         if (static::$foregroundColorMap === null) {
-            static::$foregroundColorMap = [
-                LogLevel::EMERGENCY => new ForegroundColors(ForegroundColors::YELLOW),
-                LogLevel::ALERT => new ForegroundColors(ForegroundColors::WHITE),
-                LogLevel::CRITICAL => new ForegroundColors(ForegroundColors::RED),
-                LogLevel::ERROR => new ForegroundColors(ForegroundColors::LIGHT_RED),
-                LogLevel::WARNING => new ForegroundColors(ForegroundColors::YELLOW),
-                LogLevel::NOTICE => new ForegroundColors(ForegroundColors::LIGHT_BLUE),
-                LogLevel::INFO => new ForegroundColors(ForegroundColors::LIGHT_GREEN),
-                LogLevel::DEBUG => null
-            ];
+            $this->resetFGColors();
         }
         return static::$foregroundColorMap[$level] ?? null;
     }
 
     /**
+     * Set foreground colors map to default ones
+     */
+    public function resetFGColors()
+    {
+        static::$foregroundColorMap = [
+            LogLevel::EMERGENCY => ForegroundColors::YELLOW(),
+            LogLevel::ALERT => ForegroundColors::WHITE(),
+            LogLevel::CRITICAL => ForegroundColors::RED(),
+            LogLevel::ERROR => ForegroundColors::LIGHT_RED(),
+            LogLevel::WARNING => ForegroundColors::YELLOW(),
+            LogLevel::NOTICE => ForegroundColors::LIGHT_BLUE(),
+            LogLevel::INFO => ForegroundColors::LIGHT_GREEN(),
+            LogLevel::DEBUG => null
+        ];
+    }
+
+    /**
+     * Get background color for specified level
      * @param mixed $level
      * @return BackgroundColors|null
      */
-    private function getBGColor($level)
+    public function getBGColor($level)
     {
         if (static::$backgroundColorMap === null) {
-            static::$backgroundColorMap = [
-                LogLevel::EMERGENCY => new BackgroundColors(BackgroundColors::RED),
-                LogLevel::ALERT => new BackgroundColors(BackgroundColors::RED),
-                LogLevel::CRITICAL => new BackgroundColors(BackgroundColors::YELLOW),
-                LogLevel::ERROR => null,
-                LogLevel::WARNING => null,
-                LogLevel::NOTICE => null,
-                LogLevel::INFO => null,
-                LogLevel::DEBUG => null
-            ];
+            $this->resetBGColor();
         }
         return static::$backgroundColorMap[$level] ?? null;
     }
 
     /**
+     * Set background colors map to default ones
+     */
+    public function resetBGColor()
+    {
+        static::$backgroundColorMap = [
+            LogLevel::EMERGENCY => BackgroundColors::RED(),
+            LogLevel::ALERT => BackgroundColors::RED(),
+            LogLevel::CRITICAL => BackgroundColors::YELLOW(),
+            LogLevel::ERROR => null,
+            LogLevel::WARNING => null,
+            LogLevel::NOTICE => null,
+            LogLevel::INFO => null,
+            LogLevel::DEBUG => null
+        ];
+    }
+
+    /**
+     * Get output stream for specified level
      * @param mixed $level
      * @return resource
      */
-    private function getStream($level)
+    public function getOutputStream($level)
     {
         if (static::$streamsMap === null) {
-            defined('STDOUT') || define('STDOUT', fopen('php://stdout', 'w'));
-            defined('STDERR') || define('STDERR', fopen('php://stderr', 'w'));
-            static::$streamsMap = [
-                LogLevel::EMERGENCY => STDERR,
-                LogLevel::ALERT => STDERR,
-                LogLevel::CRITICAL => STDERR,
-                LogLevel::ERROR => STDERR,
-                LogLevel::WARNING => STDERR,
-                LogLevel::NOTICE => STDOUT,
-                LogLevel::INFO => STDOUT,
-                LogLevel::DEBUG => STDOUT
-            ];
+            $this->resetOutputStreams();
         }
         return static::$streamsMap[$level] ?? STDERR;
+    }
+
+    /**
+     * Set output streams map to default map
+     */
+    public function resetOutputStreams()
+    {
+        defined('STDOUT') || define('STDOUT', fopen('php://stdout', 'w'));
+        defined('STDERR') || define('STDERR', fopen('php://stderr', 'w'));
+        static::$streamsMap = [
+            LogLevel::EMERGENCY => STDERR,
+            LogLevel::ALERT => STDERR,
+            LogLevel::CRITICAL => STDERR,
+            LogLevel::ERROR => STDERR,
+            LogLevel::WARNING => STDERR,
+            LogLevel::NOTICE => STDOUT,
+            LogLevel::INFO => STDOUT,
+            LogLevel::DEBUG => STDOUT
+        ];
+    }
+
+    /**
+     * Set foreground color for specified level
+     * @param mixed $level
+     * @param ForegroundColors $color
+     * @return $this
+     */
+    public function setFGColor($level, ForegroundColors $color)
+    {
+        if (static::$foregroundColorMap === null) {
+            $this->resetFGColors();
+        }
+        $this->checkLevel($level);
+        static::$foregroundColorMap[$level] = $color;
+        return $this;
+    }
+
+    /**
+     * Set background color for specified level
+     * @param mixed $level
+     * @param ForegroundColors $color
+     * @return $this
+     */
+    public function setBGColor($level, ForegroundColors $color)
+    {
+        if (static::$foregroundColorMap === null) {
+            $this->resetBGColor();
+        }
+        $this->checkLevel($level);
+        static::$foregroundColorMap[$level] = $color;
+        return $this;
+    }
+
+    /**
+     * Set output stream for specified level
+     * @param mixed $level
+     * @param resource $stream
+     * @return $this
+     */
+    public function setOutputStream($level, $stream)
+    {
+        if (static::$streamsMap === null) {
+            $this->resetOutputStreams();
+        }
+        $this->checkLevel($level);
+        if (!is_resource($stream)) {
+            throw new \UnexpectedValueException("Argument '\$stream' must be a writable stream resource");
+        }
+        static::$streamsMap[$level] = $stream;
+        return $this;
     }
 }
