@@ -1,0 +1,21 @@
+{
+  "name": "alexlcdee/colorful-logger",
+  "description": "Console Logger with color highlighted level tags",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Alexander Larkin",
+      "email": "info@alexlcdee.ru"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "ColorfulLogger\\": "src/"
+    }
+  },
+  "require": {
+    "psr/log": "^1.0"
+  }
+}
