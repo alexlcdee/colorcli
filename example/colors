@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+use ColorCLI\BackgroundColors;
+use ColorCLI\ColorHelper;
+use ColorCLI\ForegroundColors;
+
+echo ColorHelper::colorString('I am a RED string on YELLOW background', ForegroundColors::RED(), BackgroundColors::YELLOW());
+echo PHP_EOL;

@@ -5,7 +5,7 @@ namespace ColorCLI;
 use MyCLabs\Enum\Enum;
 
 /**
- * Class ForegroundColors
+ * Enum ForegroundColors
  * @package ColorCLI
  *
  * @method static ForegroundColors BLACK()

@@ -3,6 +3,7 @@
 namespace ColorCLI;
 
 use Psr\Log\AbstractLogger;
+use Psr\Log\InvalidArgumentException;
 use Psr\Log\LogLevel;
 
 class Logger extends AbstractLogger
@@ -27,43 +28,48 @@ class Logger extends AbstractLogger
      */
     protected static $levels = null;
 
+    protected $colorsEnabled = true;
+
     /**
      * Logs with an arbitrary level.
      *
      * @param mixed $level
      * @param string $message
      * @param array $context
-     *
      * @return void
-     * @throws InvalidValueException
      */
     public function log($level, $message, array $context = array())
     {
         $this->checkLevel($level);
-        $prefix = ColorHelper::colorString(strtoupper("[{$level}]"), $this->getFGColor($level), $this->getBGColor($level));
-        fputs($this->getOutputStream($level), "{$prefix}: $message\n");
+        $prefix = $this->colorsEnabled ?
+            ColorHelper::colorString(strtoupper("[{$level}]"), $this->getFGColor($level), $this->getBGColor($level)) :
+            strtoupper("[{$level}]");
+        $message = $this->interpolate($message, $context);
+        if (isset($context['exception']) && $context['exception'] instanceof \Exception) {
+            $message .= PHP_EOL . $this->handleException($context['exception']);
+        }
+        $message = $this->processMultiline($level, $message);
+        fputs($this->getOutputStream($level), "{$prefix}: $message" . PHP_EOL);
     }
 
     /**
      * Check if level exists in list of possible levels
+     * Psr\Log suggests to throw Psr\Log\InvalidArgumentException if  incompatible log level passed
      * @param mixed $level
+     * @throws InvalidArgumentException
      */
     public function checkLevel($level)
     {
         if (static::$levels === null) {
-            $this->loadLevels();
+            // Psr\Log does not provide Enum, so we need to load levels from LogLevel constants
+            $reflection = new \ReflectionClass(LogLevel::class);
+            static::$levels = $reflection->getConstants();
         }
 
         if (!in_array($level, static::$levels)) {
             $levels = implode(', ', static::$levels);
-            throw new \UnexpectedValueException("Level must be one of [$levels].");
+            throw new InvalidArgumentException("Level must be one of [$levels].");
         }
-    }
-
-    private function loadLevels()
-    {
-        $reflection = new \ReflectionClass(LogLevel::class);
-        static::$levels = $reflection->getConstants();
     }
 
     /**
@@ -124,6 +130,64 @@ class Logger extends AbstractLogger
             LogLevel::INFO => null,
             LogLevel::DEBUG => null
         ];
+    }
+
+    /**
+     * Replace placeholders in message with data from context
+     * @param string $message
+     * @param array $context
+     * @return string
+     * @see https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-3-logger-interface.md#12-message
+     */
+    protected function interpolate($message, array $context = array())
+    {
+        // build a replacement array with braces around the context keys
+        $replace = array();
+        foreach ($context as $key => $val) {
+            // check that the value can be casted to string
+            if (!is_array($val) && (!is_object($val) || method_exists($val, '__toString'))) {
+                $replace['{' . $key . '}'] = $val;
+            }
+        }
+
+        // interpolate replacement values into the message and return
+        return strtr($message, $replace);
+    }
+
+    /**
+     * Handle Exception <br>
+     * Render exception name, message and stack trace
+     * @param \Exception $exception
+     * @return string
+     */
+    protected function handleException(\Exception $exception)
+    {
+        return get_class($exception) . ": {$exception->getMessage()} in {$exception->getFile()}:{$exception->getLine()}"
+            . PHP_EOL
+            . "{$exception->getTraceAsString()}";
+    }
+
+    /**
+     * Process multiline message <br>
+     * Add left padding for every line of message
+     * @param mixed $level
+     * @param string $message
+     * @return string
+     */
+    protected function processMultiline($level, $message)
+    {
+        $messageStringArray = preg_split('/\r?\n/', $message);
+        $messageString = implode(PHP_EOL . $this->getPadding($level), $messageStringArray);
+        return $messageString;
+    }
+
+    /**
+     * @param mixed $level
+     * @return string
+     */
+    protected function getPadding($level)
+    {
+        return str_pad('', strlen($level) + 4, ' ');
     }
 
     /**
@@ -207,5 +271,21 @@ class Logger extends AbstractLogger
         }
         static::$streamsMap[$level] = $stream;
         return $this;
+    }
+
+    /**
+     * Disable colored output
+     */
+    public function disableColors()
+    {
+        $this->colorsEnabled = false;
+    }
+
+    /**
+     * Enable colored output
+     */
+    public function enableColors()
+    {
+        $this->colorsEnabled = true;
     }
 }

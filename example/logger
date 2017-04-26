@@ -1,0 +1,40 @@
+#!/usr/bin/env php
+<?php
+
+class Throwing
+{
+    public function throwException($level = 0)
+    {
+        if ($level !== 4)
+            $this->throwException(++$level);
+        else
+            throw new Exception('Critical conditions');
+    }
+}
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+$logger = new \ColorCLI\Logger();
+
+$logger->emergency('System is unusable.');
+$logger->alert('Action must be taken immediately.');
+$logger->critical('Critical conditions.');
+$logger->error('Runtime errors that do not require immediate action but should typically');
+$logger->warning('Exceptional occurrences that are not errors.');
+$logger->notice('Normal but significant events.');
+$logger->info('Interesting events.');
+$logger->debug('Detailed debug information.');
+
+$logger->debug('Contextual debug output from {fileName}:{line}', [
+    'fileName' => __FILE__,
+    'line' => __LINE__
+]);
+
+$logger->info("Processing
+multiline message");
+
+try {
+    (new Throwing())->throwException();
+} catch (Exception $e) {
+    $logger->alert('Caught an exception!', ['exception' => $e]);
+}
